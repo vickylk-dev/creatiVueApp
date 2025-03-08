@@ -17,7 +17,7 @@ function App() {
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState([]);
   const [showPopup, setShowPopup] = useState(true);
-  
+   
   useEffect(() => {
     if (!username || showPopup) return;
   
@@ -30,14 +30,16 @@ function App() {
     const setCanvasSize = () => {
       const rect = canvas.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
+  
       canvas.width = rect.width * ratio;
       canvas.height = rect.height * ratio;
+  
       ctx.scale(ratio, ratio);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
     };
   
     setCanvasSize();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
     ctxRef.current = ctx;
   
     socket.on("updateUserList", (userList) => {
@@ -58,8 +60,10 @@ function App() {
     });
   
     socket.on("draw", ({ x, y, color, size }) => {
+      ctx.beginPath();  
       ctx.strokeStyle = color;
       ctx.lineWidth = size;
+      ctx.moveTo(x, y);
       ctx.lineTo(x, y);
       ctx.stroke();
     });
@@ -86,15 +90,15 @@ function App() {
       window.removeEventListener("resize", setCanvasSize);
       window.removeEventListener("beforeunload", handleTabClose);
     };
-  }, [username, showPopup]); 
+  }, [username, showPopup]);
   
 
   const getMousePos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = canvasRef.current.width / rect.width;
-    const scaleY = canvasRef.current.height / rect.height;
+    const scaleX = canvasRef.current.width / rect.width; 
+    const scaleY = canvasRef.current.height / rect.height; 
     return {
-      x: (e.clientX - rect.left) * scaleX,
+      x: (e.clientX - rect.left) * scaleX, 
       y: (e.clientY - rect.top) * scaleY,
     };
   };
