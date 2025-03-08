@@ -26,5 +26,5 @@ Creativue is a **real-time collaborative drawing application** built with **Reac
 
 ### **1️⃣ Clone the Repository**
 ```bash
-git clone https://github.com/lkvignesh/creativue.git
+git clone https://github.com/vickylk-dev/creatiVueApp.git
 cd creativue
