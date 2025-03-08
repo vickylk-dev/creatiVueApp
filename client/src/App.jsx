@@ -5,7 +5,7 @@ import { FaPalette, FaCircle, FaUsers } from "react-icons/fa";
 import { MdFormatSize, MdClear } from "react-icons/md";
 import logo from "./assets/colorPalette.png";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://creativue-server-1.onrender.com");
 
 function App() {
   const canvasRef = useRef(null);
