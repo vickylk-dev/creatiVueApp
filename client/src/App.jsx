@@ -17,7 +17,7 @@ function App() {
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState([]);
   const [showPopup, setShowPopup] = useState(true);
-  const usersDrawing = {};
+  const usersDrawingRef = useRef({});
 
   useEffect(() => {
     if (!username || showPopup) return;
@@ -58,23 +58,24 @@ function App() {
     });
 
     socket.on("startStroke", ({ x, y, userId }) => {
-      usersDrawing[userId] = { x, y };
+      usersDrawingRef.current[userId] = { x, y };
     });
 
     socket.on("draw", ({ x, y, color, size, userId }) => {
-      if (!ctxRef.current || !usersDrawing[userId]) return;
-
+      if (!ctxRef.current || !usersDrawingRef.current[userId]) return;
+    
       const ctx = ctxRef.current;
-
+    
       ctx.strokeStyle = color;
       ctx.lineWidth = size;
       ctx.beginPath();
-      ctx.moveTo(usersDrawing[userId].x, usersDrawing[userId].y);
+      ctx.moveTo(usersDrawingRef.current[userId].x, usersDrawingRef.current[userId].y);
       ctx.lineTo(x, y);
       ctx.stroke();
-
-      usersDrawing[userId] = { x, y };
+      ctx.closePath();
+      usersDrawingRef.current[userId] = { x, y };
     });
+    
 
     socket.on("clearCanvas", () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
