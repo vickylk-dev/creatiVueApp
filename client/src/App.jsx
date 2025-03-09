@@ -17,74 +17,76 @@ function App() {
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState([]);
   const [showPopup, setShowPopup] = useState(true);
-   
+  const usersDrawing = {};
+
   useEffect(() => {
     if (!username || showPopup) return;
-  
+
     socket.emit("userJoined", username);
     socket.emit("getUsers");
-  
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-  
+
     const setCanvasSize = () => {
       const rect = canvas.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
-  
+
       canvas.width = rect.width * ratio;
       canvas.height = rect.height * ratio;
-  
+
+      ctx.resetTransform();
       ctx.scale(ratio, ratio);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      
-    ctxRef.current = ctx;
+
+      ctxRef.current = ctx;
     };
-  
+
     setCanvasSize();
-  
+
     socket.on("updateUserList", (userList) => {
       setUsers(userList);
     });
-  
+
     socket.on("userJoined", (name) => {
       setMessages((prev) => [...prev, `${name} has joined the session`]);
     });
-  
+
     socket.on("userDisconnected", (name) => {
       setMessages((prev) => [...prev, `${name} has left the session`]);
     });
-  
-    const usersDrawing = {}; 
 
-socket.on("startStroke", ({ x, y, userId }) => {
-  usersDrawing[userId] = { x, y }; 
-});
+    socket.on("startStroke", ({ x, y, userId }) => {
+      usersDrawing[userId] = { x, y };
+    });
 
-socket.on("draw", ({ x, y, color, size, userId }) => {
-  if (!usersDrawing[userId]) return;
+    socket.on("draw", ({ x, y, color, size, userId }) => {
+      if (!ctxRef.current || !usersDrawing[userId]) return;
 
-  ctx.strokeStyle = color;
-  ctx.lineWidth = size;
-  ctx.beginPath();
-  ctx.moveTo(usersDrawing[userId].x, usersDrawing[userId].y);
-  ctx.lineTo(x, y);
-  ctx.stroke();
+      const ctx = ctxRef.current;
 
-  usersDrawing[userId] = { x, y }; 
-});
-  
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.beginPath();
+      ctx.moveTo(usersDrawing[userId].x, usersDrawing[userId].y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      usersDrawing[userId] = { x, y };
+    });
+
     socket.on("clearCanvas", () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
-  
+
     const handleTabClose = () => {
       socket.emit("userDisconnected", username);
     };
-  
+
     window.addEventListener("beforeunload", handleTabClose);
     window.addEventListener("resize", setCanvasSize);
-  
+
     return () => {
       socket.emit("userDisconnected", username);
       socket.off("updateUserList");
@@ -97,11 +99,10 @@ socket.on("draw", ({ x, y, color, size, userId }) => {
       window.removeEventListener("beforeunload", handleTabClose);
     };
   }, [username, showPopup]);
-  
 
   const getMousePos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const ratio = window.devicePixelRatio || 1;  
+    const ratio = window.devicePixelRatio || 1;
     return {
       x: (e.clientX - rect.left) * ratio,
       y: (e.clientY - rect.top) * ratio,
@@ -132,7 +133,12 @@ socket.on("draw", ({ x, y, color, size, userId }) => {
   };
 
   const clearCanvas = () => {
-    ctxRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    ctxRef.current.clearRect(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
     socket.emit("clearCanvas");
   };
 
@@ -147,8 +153,17 @@ socket.on("draw", ({ x, y, color, size, userId }) => {
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup">
-          <h3 className="app-name"><img src={logo} alt="img" width="20px" height="20px" style={{marginRight: "5px",}}/>CreatiVue </h3>
-            <hr/>
+            <h3 className="app-name">
+              <img
+                src={logo}
+                alt="img"
+                width="20px"
+                height="20px"
+                style={{ marginRight: "5px" }}
+              />
+              CreatiVue{" "}
+            </h3>
+            <hr />
             <h4>Enter Your Name</h4>
             <input
               type="text"
@@ -162,7 +177,16 @@ socket.on("draw", ({ x, y, color, size, userId }) => {
       {!showPopup && (
         <>
           <div className="header">
-            <h3 className="app-name"><img src={logo} alt="img" width="20px" height="20px" style={{marginRight: "10px",marginTop:"5px"}}/>CreatiVue </h3>
+            <h3 className="app-name">
+              <img
+                src={logo}
+                alt="img"
+                width="20px"
+                height="20px"
+                style={{ marginRight: "10px", marginTop: "5px" }}
+              />
+              CreatiVue{" "}
+            </h3>
             <h5 className="welcome-msg">Welcome, {username}</h5>
           </div>
           <canvas
@@ -176,13 +200,25 @@ socket.on("draw", ({ x, y, color, size, userId }) => {
           <div className="controls">
             <label>
               <FaPalette /> Color:
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+              />
             </label>
             <label>
               <MdFormatSize /> Size:
-              <input type="range" min="2" max="20" value={size} onChange={(e) => setSize(parseInt(e.target.value, 10))} />
+              <input
+                type="range"
+                min="2"
+                max="20"
+                value={size}
+                onChange={(e) => setSize(parseInt(e.target.value, 10))}
+              />
             </label>
-            <button onClick={clearCanvas} className="clear-btn"><MdClear style={{ paddingTop: "3px" }}/> Clear</button>
+            <button onClick={clearCanvas} className="clear-btn">
+              <MdClear style={{ paddingTop: "3px" }} /> Clear
+            </button>
           </div>
           <div className="messages">
             {messages.map((msg, index) => (
@@ -190,10 +226,24 @@ socket.on("draw", ({ x, y, color, size, userId }) => {
             ))}
           </div>
           <div className="users-list">
-            <h4><FaUsers style={{ color: "blue", paddingTop: "3px", marginRight: "3px" }}/> Active Users:</h4>
+            <h4>
+              <FaUsers
+                style={{ color: "blue", paddingTop: "3px", marginRight: "3px" }}
+              />{" "}
+              Active Users:
+            </h4>
             <ul>
               {users.map((user, index) => (
-                <li key={index}><FaCircle style={{ color: "green", fontSize: "10px", marginRight: "6px" }} />{user}</li>
+                <li key={index}>
+                  <FaCircle
+                    style={{
+                      color: "green",
+                      fontSize: "10px",
+                      marginRight: "6px",
+                    }}
+                  />
+                  {user}
+                </li>
               ))}
             </ul>
           </div>
