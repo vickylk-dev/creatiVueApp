@@ -18,39 +18,40 @@ app.use(cors());
 const users = {}; 
 
 io.on("connection", (socket) => {
-    socket.on("userJoined", (name) => {
-        if (!Object.values(users).includes(name)) {  
-            users[socket.id] = name;
-            io.emit("updateUserList", Object.values(users));
-            io.emit("userJoined", name);
-        }
-      });
+  socket.on("userJoined", (name) => {
+      if (!Object.values(users).includes(name)) {  
+          users[socket.id] = name;
+          io.emit("updateUserList", Object.values(users));
+          io.emit("userJoined", name);
+      }
+  });
 
   socket.on("startStroke", ({ x, y }) => {
-    socket.broadcast.emit("startStroke", { x, y });
+      socket.broadcast.emit("startStroke", { x, y, userId: socket.id });
   });
 
   socket.on("draw", ({ x, y, color, size }) => {
-    socket.broadcast.emit("draw", { x, y, color, size });
+      socket.broadcast.emit("draw", { x, y, color, size, userId: socket.id });
   });
 
   socket.on("clearCanvas", () => {
-    io.emit("clearCanvas");
+      io.emit("clearCanvas");
   });
 
   socket.on("getUsers", () => {
-    socket.emit("updateUserList", Object.values(users));
+      socket.emit("updateUserList", Object.values(users));
   });
 
   socket.on("disconnect", () => {
-    const name = users[socket.id]; 
-    delete users[socket.id]; 
-    io.emit("updateUserList", Object.values(users));
-    if (name) {
-        io.emit("userDisconnected", `${name}`);
-    }
+      const name = users[socket.id]; 
+      delete users[socket.id]; 
+      io.emit("updateUserList", Object.values(users));
+      if (name) {
+          io.emit("userDisconnected", `${name}`);
+      }
   });
 });
+
 
 server.listen(port, () => console.log(`Server running on port ${port}`));
 

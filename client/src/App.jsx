@@ -37,10 +37,11 @@ function App() {
       ctx.scale(ratio, ratio);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
+      
+    ctxRef.current = ctx;
     };
   
     setCanvasSize();
-    ctxRef.current = ctx;
   
     socket.on("updateUserList", (userList) => {
       setUsers(userList);
@@ -54,19 +55,24 @@ function App() {
       setMessages((prev) => [...prev, `${name} has left the session`]);
     });
   
-    socket.on("startStroke", ({ x, y }) => {
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    });
-  
-    socket.on("draw", ({ x, y, color, size }) => {
-      ctx.beginPath();  
-      ctx.strokeStyle = color;
-      ctx.lineWidth = size;
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-    });
+    const usersDrawing = {}; 
+
+socket.on("startStroke", ({ x, y, userId }) => {
+  usersDrawing[userId] = { x, y }; 
+});
+
+socket.on("draw", ({ x, y, color, size, userId }) => {
+  if (!usersDrawing[userId]) return;
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = size;
+  ctx.beginPath();
+  ctx.moveTo(usersDrawing[userId].x, usersDrawing[userId].y);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+
+  usersDrawing[userId] = { x, y }; 
+});
   
     socket.on("clearCanvas", () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -95,11 +101,10 @@ function App() {
 
   const getMousePos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = canvasRef.current.width / rect.width; 
-    const scaleY = canvasRef.current.height / rect.height; 
+    const ratio = window.devicePixelRatio || 1;  
     return {
-      x: (e.clientX - rect.left) * scaleX, 
-      y: (e.clientY - rect.top) * scaleY,
+      x: (e.clientX - rect.left) * ratio,
+      y: (e.clientY - rect.top) * ratio,
     };
   };
 
